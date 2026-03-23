@@ -6,6 +6,7 @@ import LandingPage from "./pages/LandingPage";
 import StudyPage from "./pages/StudyPage";
 import ProgressPage from "./pages/ProgressPage";
 import WellnessPage from "./pages/WellnessPage";
+import { Toaster } from "sonner";
 
 export default function App() {
     const [page, setPage] = useState("home");
@@ -31,6 +32,8 @@ export default function App() {
     };
 
     return (
+        <>
+        <Toaster position="top-center" richColors />
         <div className="min-h-screen bg-[#111] text-white">
             <div className="relative min-h-screen overflow-hidden">
                 <Background />
@@ -66,5 +69,6 @@ export default function App() {
                 </div>
             </div>
         </div>
+        </>
     );
 }

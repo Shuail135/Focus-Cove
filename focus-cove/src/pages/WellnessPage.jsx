@@ -1,6 +1,6 @@
-import { Users } from "lucide-react";
+import { Hammer, LaptopMinimalCheck, Scale, Timer, Toolbox, Trophy, Users } from "lucide-react";
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, scale } from "framer-motion";
 import {
     Heart,
     Brain,
@@ -43,6 +43,34 @@ const stressItems = [
     },
 ];
 
+const procrastinationItems = [
+    {
+        title: "Break Large Tasks into Small Steps",
+        icon: Hammer,
+        body: "Large tasks feel overwhelming. Break them down into 5-10 minute chunks. Starting is often the hardest part!",
+    },
+    {
+        title: "Use the 2-Minute Rule",
+        icon: Scale,
+        body: "If a task takes less than 2 minutes, do it immediately. This builds momentum and reduces your mental load.",
+    },
+    {
+        title: "Eliminate Distractions",
+        icon: LaptopMinimalCheck,
+        body: "Put your phone in another room, use website blockers, or study in a quiet space. Make it easy to focus.",
+    },
+    {
+        title: "Set Clear Intentions",
+        icon: Toolbox,
+        body: "Before each study session, write down exactly what you want to accomplish. Specific goals are more motivating.",
+    },
+    {
+        title: "Reward Yourself",
+        icon: Trophy,
+        body: "After completing a task, give yourself a small reward. This creates positive associations with productivity.",
+    },
+];
+
 export default function WellnessPage() {
     const [tab, setTab] = useState("stress");
     const [openIndex, setOpenIndex] = useState(0);
@@ -64,6 +92,7 @@ export default function WellnessPage() {
             icon: Coffee,
         },
     ];
+    const slide = tab === "stress" ? stressItems : procrastinationItems;
 
     return (
         <div className="px-6 pb-20 pt-0 text-white">
@@ -130,13 +159,13 @@ export default function WellnessPage() {
                         </div>
 
                         <div className="mt-2 text-sm text-white/50">
-                            {tab === "stress"
+                            {tab === "procrastination"
                                 ? "Practical strategies to stay calm and focused during demanding times"
                                 : "Gentle ways to start tasks, reduce overwhelm, and build momentum"}
                         </div>
 
                         <div className="mt-6 overflow-hidden rounded-xl border border-white/10 bg-[#272757]">
-                            {stressItems.map((item, idx) => {
+                            {slide.map((item, idx) => {
                                 const Icon = item.icon;
                                 const isOpen = openIndex === idx;
 
