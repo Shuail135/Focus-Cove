@@ -26,7 +26,6 @@ export default function StudyPage({ onCompleteSession }) {
     const [userId, setUserId] = useState(null);
     const userIdRef = useRef(null);
     const [todaySessions, setTodaySessions] = useState(0);
-    const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
     // keeps moderef in sync with the mode state
     useEffect(() => {
@@ -35,7 +34,7 @@ export default function StudyPage({ onCompleteSession }) {
 
     async function fetchTodaySessions(currentUserId) {
         try {
-            await axios.get(`${API_BASE}/sessions/today/${currentUserId}`);
+            await axios.get(`/api/sessions/today/${currentUserId}`);
             setTodaySessions(response.data.total_sessions || 0);
 
         } catch (error) {
@@ -119,7 +118,7 @@ export default function StudyPage({ onCompleteSession }) {
                 return false;
             }
 
-            await axios.post(`${API_BASE}/sessions`, {
+            await axios.post(`/api/sessions`, {
                 user_id: currentUserId,
                 duration_minutes: Number(minutes),
             });

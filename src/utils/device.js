@@ -1,7 +1,5 @@
 import axios from "axios";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
-
 // Get or create device ID
 export function getDeviceId() {
     let deviceId = localStorage.getItem("device_id");
@@ -19,7 +17,7 @@ export async function getOrCreateUser() {
     try {
         const deviceId = getDeviceId();
 
-        const response = await axios.post(`${API_BASE}/users`, {
+        const response = await axios.post("/api/users", {
             device_id: deviceId,
         });
 

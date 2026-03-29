@@ -26,7 +26,6 @@ export default function ProgressPage() {
     const [bestStreak, setBestStreak] = useState(0);
     const [last7Days, setLast7Days] = useState([0, 0, 0, 0, 0, 0, 0]);
     const [loading, setLoading] = useState(true);
-    const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
     useEffect(() => {
         async function fetchProgress() {
@@ -34,7 +33,7 @@ export default function ProgressPage() {
                 const user = await getOrCreateUser();
 
                 const response = await axios.get(
-                    `${API_BASE}/progress/${user.user_id}`
+                    `/api/progress/${user.user_id}`
                 );
 
                 setTotalMinutes(response.data.totalMinutes || 0);
