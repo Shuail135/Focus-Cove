@@ -3,26 +3,26 @@ import { motion } from "framer-motion";
 import { TimerReset, BarChart3, Heart } from "lucide-react";
 import GlassCard from "../components/GlassCard";
 
-export default function LandingPage({ goTo }) {
+export default function LandingPage({ goTo, t }) {
     const cards = [
         {
-            title: "Study Timer",
-            desc: "Use the Pomodoro technique to stay focused with customizable work and break intervals.",
-            action: "Start Studying",
+            title: t.landing.cards.study.title,
+            desc: t.landing.cards.study.desc,
+            action: t.landing.cards.study.action,
             icon: TimerReset,
             target: "study",
         },
         {
-            title: "Track Progress",
-            desc: "Visualize your study sessions and celebrate your achievements along the way.",
-            action: "View Progress",
+            title: t.landing.cards.progress.title,
+            desc: t.landing.cards.progress.desc,
+            action: t.landing.cards.progress.action,
             icon: BarChart3,
             target: "progress",
         },
         {
-            title: "Wellness Hub",
-            desc: "Find tips and resources to manage stress and beat procrastination effectively.",
-            action: "Explore Wellness",
+            title: t.landing.cards.wellness.title,
+            desc: t.landing.cards.wellness.desc,
+            action: t.landing.cards.wellness.action,
             icon: Heart,
             target: "wellness",
         },
@@ -33,12 +33,10 @@ export default function LandingPage({ goTo }) {
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
                 <div className="text-center">
                     <div className="text-5xl font-semibold tracking-tight md:text-6xl">
-                        ✧ Welcome to Focus Cove ✧
+                        {t.landing.heroTitle}
                     </div>
                     <p className="mx-auto mt-5 max-w-3xl text-lg leading-8 text-white/60 md:text-xl">
-                        Your cozy corner for productive studying and mindful breaks. Manage your
-                        workload, track your progress, and take care of your wellbeing—all in one
-                        peaceful place.
+                        {t.landing.heroDesc}
                     </p>
                 </div>
 
@@ -46,7 +44,7 @@ export default function LandingPage({ goTo }) {
                     {cards.map((card) => {
                         const Icon = card.icon;
                         return (
-                            <GlassCard key={card.title} className="p-5">
+                            <GlassCard key={card.target} className="p-5">
                                 <div className="mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-white/10">
                                     <Icon className="h-5 w-5 text-white/90" />
                                 </div>
@@ -66,10 +64,9 @@ export default function LandingPage({ goTo }) {
                 </div>
 
                 <GlassCard className="mt-7 p-5">
-                    <h4 className="text-2xl font-medium">Daily Reminder</h4>
+                    <h4 className="text-2xl font-medium">{t.landing.reminderTitle}</h4>
                     <p className="mt-3 text-base leading-8 text-white/60">
-                        “Progress, not perfection. Every study session counts, no matter how small.
-                        Take breaks, stay hydrated, and remember to be kind to yourself.” 🌿
+                        {t.landing.reminderText}
                     </p>
                 </GlassCard>
             </motion.div>

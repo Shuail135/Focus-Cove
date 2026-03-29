@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Navbar from "./components/Navbar";
 import Background from "./components/Background.jsx";
@@ -7,6 +7,7 @@ import StudyPage from "./pages/StudyPage";
 import ProgressPage from "./pages/ProgressPage";
 import WellnessPage from "./pages/WellnessPage";
 import { Toaster } from "sonner";
+import translations from "./translations";
 
 export default function App() {
     const [page, setPage] = useState("home");
@@ -15,6 +16,16 @@ export default function App() {
     const [streak, setStreak] = useState(0);
     const [bestStreak, setBestStreak] = useState(0);
     const [last7Days, setLast7Days] = useState([0, 0, 0, 0, 0, 0, 0]);
+
+    const [lang, setLang] = useState(() => {
+        return localStorage.getItem("focuscove-lang") || "en";
+    });
+
+    useEffect(() => {
+        localStorage.setItem("focuscove-lang", lang);
+    }, [lang]);
+
+    const t = translations[lang];
 
     const completeSession = (minutes) => {
         setSessions((s) => s + 1);
@@ -33,42 +44,68 @@ export default function App() {
 
     return (
         <>
-        <Toaster position="top-center" richColors />
-        <div className="min-h-screen bg-[#111] text-white">
-            <div className="relative min-h-screen overflow-hidden">
-                <Background />
-                <div className="absolute inset-0 bg-[#3f4588]/25" />
+            <Toaster position="top-center" richColors />
+            <div className="min-h-screen bg-[#111] text-white">
+                <div className="relative min-h-screen overflow-hidden">
+                    <Background />
+                    <div className="absolute inset-0 bg-[#3f4588]/25" />
 
-                <div className="relative z-10 min-h-screen">
-                    <Navbar current={page} setCurrent={setPage} />
+                    <div className="relative z-10 min-h-screen">
+                        <Navbar
+                            current={page}
+                            setCurrent={setPage}
+                            lang={lang}
+                            setLang={setLang}
+                        />
 
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={page}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            transition={{ duration: 0.24 }}
-                        >
-                            {page === "home" && <LandingPage goTo={setPage} />}
-                            {page === "study" && (
-                                <StudyPage sessions={sessions} onCompleteSession={completeSession} />
-                            )}
-                            {page === "progress" && (
-                                <ProgressPage
-                                    totalMinutes={totalMinutes}
-                                    sessions={sessions}
-                                    streak={streak}
-                                    bestStreak={bestStreak}
-                                    last7Days={last7Days}
-                                />
-                            )}
-                            {page === "wellness" && <WellnessPage />}
-                        </motion.div>
-                    </AnimatePresence>
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={page}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.24 }}
+                            >
+                                {page === "home" && (
+                                    <LandingPage
+                                        goTo={setPage}
+                                        lang={lang}
+                                        t={t}
+                                    />
+                                )}
+
+                                {page === "study" && (
+                                    <StudyPage
+                                        sessions={sessions}
+                                        onCompleteSession={completeSession}
+                                        lang={lang}
+                                        t={t}
+                                    />
+                                )}
+
+                                {page === "progress" && (
+                                    <ProgressPage
+                                        totalMinutes={totalMinutes}
+                                        sessions={sessions}
+                                        streak={streak}
+                                        bestStreak={bestStreak}
+                                        last7Days={last7Days}
+                                        lang={lang}
+                                        t={t}
+                                    />
+                                )}
+
+                                {page === "wellness" && (
+                                    <WellnessPage
+                                        lang={lang}
+                                        t={t}
+                                    />
+                                )}
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
                 </div>
             </div>
-        </div>
         </>
     );
 }

@@ -19,7 +19,7 @@ function MetricCard({ title, value, sub, icon: Icon }) {
     );
 }
 
-export default function ProgressPage() {
+export default function ProgressPage({ t, lang }) {
     const [totalMinutes, setTotalMinutes] = useState(0);
     const [sessions, setSessions] = useState(0);
     const [streak, setStreak] = useState(0);
@@ -32,9 +32,7 @@ export default function ProgressPage() {
             try {
                 const user = await getOrCreateUser();
 
-                const response = await axios.get(
-                    `/api/progress/${user.user_id}`
-                );
+                const response = await axios.get(`/api/progress/${user.user_id}`);
 
                 setTotalMinutes(response.data.totalMinutes || 0);
                 setSessions(response.data.sessions || 0);
@@ -43,35 +41,37 @@ export default function ProgressPage() {
                 setLast7Days(response.data.last7Days || [0, 0, 0, 0, 0, 0, 0]);
             } catch (error) {
                 console.error("Error loading progress:", error.response?.data || error.message);
-                toast.error("Failed to load progress");
+                toast.error(t.progress.errorLoad);
             } finally {
                 setLoading(false);
             }
         }
 
         fetchProgress();
-    }, []);
+    }, [t]);
 
     const max = Math.max(...last7Days, 30);
 
     const dayLabels = last7Days.map((_, i) => {
         const d = new Date();
         d.setDate(d.getDate() - (6 - i));
-        return d.toLocaleDateString("en-US", { weekday: "short" });
+        return d.toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US", {
+            weekday: "short",
+        });
     });
 
     const milestone =
         sessions === 0
-            ? "Ready to Begin! 👋"
+            ? t.progress.milestoneReady
             : sessions < 5
-                ? "Building Momentum ✨"
-                : "Consistency in Motion 🌟";
+                ? t.progress.milestoneMomentum
+                : t.progress.milestoneConsistency;
 
     if (loading) {
         return (
             <div className="px-6 pb-20 pt-0 text-white">
-                <div className="mx-auto max-w-5xl bg-[#505081] px-6 pb-12 pt-10 md:px-8 shadow-[0_10px_30px_rgba(0,0,0,0.2)]">
-                    Loading progress...
+                <div className="mx-auto max-w-5xl bg-[#505081] px-6 pb-12 pt-10 shadow-[0_10px_30px_rgba(0,0,0,0.2)] md:px-8">
+                    {t.progress.loading}
                 </div>
             </div>
         );
@@ -79,68 +79,68 @@ export default function ProgressPage() {
 
     return (
         <div className="px-6 pb-20 pt-0 text-white">
-            <div className="mx-auto max-w-5xl bg-[#505081] px-6 pb-12 pt-10 md:px-8 shadow-[0_10px_30px_rgba(0,0,0,0.2)]">
+            <div className="mx-auto max-w-5xl bg-[#505081] px-6 pb-12 pt-10 shadow-[0_10px_30px_rgba(0,0,0,0.2)] md:px-8">
                 <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
                     <div>
-                        <div className="text-4xl md:text-5xl font-semibold tracking-tight">
-                            Your Progress
+                        <div className="text-4xl font-semibold tracking-tight md:text-5xl">
+                            {t.progress.title}
                         </div>
                         <p className="mt-4 text-base text-white/50">
-                            Track your study journey and celebrate your wins
+                            {t.progress.subtitle}
                         </p>
                     </div>
 
                     <div className="mt-10 grid gap-4 md:grid-cols-4">
                         <MetricCard
-                            title="Total Sessions"
+                            title={t.progress.totalSessions}
                             value={sessions}
-                            sub={`${totalMinutes} minutes studied`}
+                            sub={`${totalMinutes} ${t.progress.minutesStudied}`}
                             icon={CalendarDays}
                         />
                         <MetricCard
-                            title="Current Streak"
+                            title={t.progress.currentStreak}
                             value={streak}
-                            sub="days in a row"
+                            sub={t.progress.daysInRow}
                             icon={Flame}
                         />
                         <MetricCard
-                            title="Best Streak"
+                            title={t.progress.bestStreak}
                             value={bestStreak}
-                            sub="personal record"
+                            sub={t.progress.personalRecord}
                             icon={Trophy}
                         />
                         <div className="rounded-xl bg-[#6b6b96] p-6 text-white shadow-[0_16px_40px_rgba(18,18,60,0.18)]">
-                            <div className="text-lg font-medium text-white/90">Milestone</div>
-                            <div className="mt-6 text-lg md:text-xl font-medium leading-tight text-white">
+                            <div className="text-lg font-medium text-white/90">
+                                {t.progress.milestone}
+                            </div>
+                            <div className="mt-6 text-lg font-medium leading-tight text-white md:text-xl">
                                 {milestone}
                             </div>
                         </div>
                     </div>
 
                     <GlassCard className="mt-6 p-6">
-                        <div className="text-2xl font-medium">Last 7 Days</div>
-                        <div className="mt-2 text-white/50">Your daily study time in minutes</div>
+                        <div className="text-2xl font-medium">{t.progress.last7Days}</div>
+                        <div className="mt-2 text-white/50">{t.progress.dailyMinutes}</div>
 
                         <div className="mt-8 h-[320px] rounded-xl border border-white/10 bg-[#272757] p-6">
                             {last7Days.every((v) => v === 0) ? (
                                 <div className="flex h-full flex-col items-center justify-center text-center text-white/40">
                                     <CalendarDays className="h-12 w-12" />
-                                    <div className="mt-4 text-2xl">No study sessions yet</div>
+                                    <div className="mt-4 text-2xl">{t.progress.noSessions}</div>
                                     <div className="mt-2 text-base">
-                                        Complete a focus session to see your progress!
+                                        {t.progress.completeToSee}
                                     </div>
                                 </div>
                             ) : (
                                 <div className="flex h-full items-end gap-4">
                                     {last7Days.map((value, i) => {
                                         const heightPercent =
-                                            value === 0
-                                                ? 12
-                                                : Math.max((value / max) * 100, 22);
+                                            value === 0 ? 12 : Math.max((value / max) * 100, 22);
 
                                         return (
                                             <div key={i} className="flex flex-1 flex-col items-center gap-3">
-                                                <div className="text-sm text-white/55 font-medium">
+                                                <div className="text-sm font-medium text-white/55">
                                                     {value}m
                                                 </div>
 
@@ -152,7 +152,7 @@ export default function ProgressPage() {
                                                             opacity: 1,
                                                         }}
                                                         transition={{ duration: 0.5, ease: "easeOut" }}
-                                                        title={`${value} minutes`}
+                                                        title={`${value} ${t.progress.minutes}`}
                                                         className={`w-full rounded-xl shadow-[0_8px_20px_rgba(0,0,0,0.18)] ${
                                                             value === 0
                                                                 ? "bg-white/20"
@@ -161,7 +161,7 @@ export default function ProgressPage() {
                                                     />
                                                 </div>
 
-                                                <div className="text-sm text-white/55 font-medium">
+                                                <div className="text-sm font-medium text-white/55">
                                                     {dayLabels[i]}
                                                 </div>
                                             </div>
@@ -173,11 +173,11 @@ export default function ProgressPage() {
                     </GlassCard>
 
                     <GlassCard className="mt-6 p-6">
-                        <div className="text-2xl font-medium">Keep Going! 🌟</div>
+                        <div className="text-2xl font-medium">{t.progress.keepGoing}</div>
                         <div className="mt-3 text-white/55">
                             {sessions === 0
-                                ? "Start your first study session to begin tracking your progress. Remember, every expert was once a beginner!"
-                                : "You are building a rhythm. Keep showing up, even on low-energy days. Small sessions still count."}
+                                ? t.progress.firstSessionMsg
+                                : t.progress.keepGoingMsg}
                         </div>
                     </GlassCard>
                 </motion.div>
