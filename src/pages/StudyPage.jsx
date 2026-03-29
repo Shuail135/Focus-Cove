@@ -34,9 +34,8 @@ export default function StudyPage({ onCompleteSession }) {
 
     async function fetchTodaySessions(currentUserId) {
         try {
-            await axios.get(`/api/sessions/today/${currentUserId}`);
+            const response = await axios.get(`/api/sessions/today/${currentUserId}`);
             setTodaySessions(response.data.total_sessions || 0);
-
         } catch (error) {
             console.error("Error fetching today's sessions:", error.response?.data || error.message);
             toast.error("Failed to load today's sessions");
