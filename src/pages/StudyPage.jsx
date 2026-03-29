@@ -3,7 +3,8 @@ import { Play, RotateCcw, Settings } from "lucide-react";
 import { motion } from "framer-motion";
 import GlassCard from "../components/GlassCard";
 import { toast } from 'sonner';
-
+import axios from "axios";
+import { getOrCreateUser } from "../utils/device";
 
 const tips = [
     "Find a quiet, comfortable space",
@@ -12,23 +13,62 @@ const tips = [
     "Stretch during breaks",
 ];
 
-export default function StudyPage({ sessions, onCompleteSession }) {
+export default function StudyPage({ onCompleteSession }) {
 
     const [modalOpen, setModalOpen] = useState(false);
-    const [focusMinutes, setFocusMinutes] = useState(25);
-    const [breakMinutes, setBreakMinutes] = useState(5);
+    const [focusMinutes, setFocusMinutes] = useState("25");
+    const [breakMinutes, setBreakMinutes] = useState("5");
     const [secondsLeft, setSecondsLeft] = useState(25 * 60);
     const [isRunning, setIsRunning] = useState(false);
     const [mode, setMode] = useState("focus"); // the mode setting
     const modeRef = useRef("focus"); // to keep track of the mode in the interval callback
+    const hasSavedRef = useRef(false); // for preventing double save
+    const [userId, setUserId] = useState(null);
+    const userIdRef = useRef(null);
+    const [todaySessions, setTodaySessions] = useState(0);
+    const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
     // keeps moderef in sync with the mode state
     useEffect(() => {
         modeRef.current = mode;
     }, [mode]);
 
+    async function fetchTodaySessions(currentUserId) {
+        try {
+            await axios.get(`${API_BASE}/sessions/today/${currentUserId}`);
+            setTodaySessions(response.data.total_sessions || 0);
 
-    // timer logic 
+        } catch (error) {
+            console.error("Error fetching today's sessions:", error.response?.data || error.message);
+            toast.error("Failed to load today's sessions");
+        }
+    }
+
+    // fetch user on page reload
+    useEffect(() => {
+        async function initUser() {
+            try {
+                const user = await getOrCreateUser();
+                console.log("Fetched user from backend:", user);
+
+                setUserId(user.user_id);
+                userIdRef.current = user.user_id;
+
+                await fetchTodaySessions(user.user_id);
+            } catch (error) {
+                console.error("User init error:", error.response?.data || error.message);
+                toast.error("Failed to load user");
+            }
+        }
+
+        initUser();
+    }, []);
+
+
+    const focusValue = Math.max(1, Math.floor(Number(focusMinutes) || 25));
+    const breakValue = Math.max(1, Math.floor(Number(breakMinutes) || 5));
+
+    // timer logic
     useEffect(() => {
         if (!isRunning) return;
 
@@ -37,51 +77,83 @@ export default function StudyPage({ sessions, onCompleteSession }) {
                 if (prev <= 1) {
                     clearInterval(id);
                     setIsRunning(false);
+
                     if (modeRef.current === "focus") {
-                        toast.success("Focus session complete! Time for a break 🎉");
-                        saveSession(25);
-                        onCompleteSession?.(focusMinutes);
+                        if (!hasSavedRef.current) {
+                            hasSavedRef.current = true;
+                            toast.success("Focus session complete! Time for a break 🎉");
+
+                            saveSession(focusValue).then((saved) => {
+                                if (saved) {
+                                    onCompleteSession?.(focusValue);
+                                }
+                            });
+                        }
+
                         setMode("break");
-                        setSecondsLeft(breakMinutes * 60); // switch to break
-                    } 
-                    else {
+                        setSecondsLeft(breakValue * 60);
+                    } else {
                         toast.success("Break's over! Ready to focus again? 💪");
                         setMode("focus");
-                        setSecondsLeft(focusMinutes * 60); // switch back to focus
-                        }
-                        return 0;
+                        setSecondsLeft(focusValue * 60);
                     }
+
+                    return 0;
+                }
+
                 return prev - 1;
             });
         }, 1000);
 
         return () => clearInterval(id);
-    }, [isRunning, focusMinutes, breakMinutes]);
+    }, [isRunning, focusValue, breakValue, onCompleteSession, userId]);
 
-    //saving the session to the local storage for now
-    //implement database next lab
-    function saveSession(minutes) { 
-        const saved = JSON.parse(localStorage.getItem("sessions") || "[]");
-        saved.push({
-            date : new Date().toISOString().split("T")[0],
-            minutes,
-            completed: true,
-        });
-        localStorage.setItem("sessions", JSON.stringify(saved));
+
+    //SQL save Session
+    async function saveSession(minutes) {
+        try {
+            const currentUserId = userIdRef.current || userId;
+
+            if (!currentUserId) {
+                toast.error("User not ready yet");
+                return false;
+            }
+
+            await axios.post(`${API_BASE}/sessions`, {
+                user_id: currentUserId,
+                duration_minutes: Number(minutes),
+            });
+
+            await fetchTodaySessions(currentUserId);
+
+            console.log("Session saved to database");
+            return true;
+        } catch (error) {
+            console.error("Error saving session:", error.response?.data || error.message);
+            toast.error("Failed to save session");
+            return false;
+        }
     }
 
     //apply new settings from the modal
     function saveSettings() {
-        setSecondsLeft(modeRef.current === "focus" ? focusMinutes * 60 : breakMinutes * 60);
+        const focus = Math.max(1, Math.floor(Number(focusMinutes) || 25));
+        const brk = Math.max(1, Math.floor(Number(breakMinutes) || 5));
+
+        setFocusMinutes(String(focus));
+        setBreakMinutes(String(brk));
+        setSecondsLeft(modeRef.current === "focus" ? focus * 60 : brk * 60);
+
         setIsRunning(false);
+        hasSavedRef.current = false;
         setModalOpen(false);
     }
-    
+
     //padding the numbers to always show 2 digits
     const mins = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
     const secs = String(secondsLeft % 60).padStart(2, "0");
 
-    const totalSeconds = mode === "focus" ? focusMinutes * 60 : breakMinutes * 60;
+    const totalSeconds = mode === "focus" ? focusValue * 60 : breakValue * 60;
     const progress = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
 
     return (
@@ -105,7 +177,7 @@ export default function StudyPage({ sessions, onCompleteSession }) {
                             <div className="flex items-start justify-between gap-4">
                                 <div>
                                     {/*display and description change based on what mode the user is in */}
-                                     <div className="text-2xl font-medium">
+                                    <div className="text-2xl font-medium">
                                         {mode === "focus" ? "Focus Time 📚" : "Break Time ☕"}
                                     </div>
                                     <div className="mt-2 text-sm text-white/55">
@@ -116,9 +188,9 @@ export default function StudyPage({ sessions, onCompleteSession }) {
                                 </div>
 
                                 <div className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 text-white/80">
-                                <button onClick={() => setModalOpen(true)}>
-                                    <Settings className="h-4 w-4" />
-                                </button>
+                                    <button onClick={() => setModalOpen(true)}>
+                                        <Settings className="h-4 w-4" />
+                                    </button>
                                 </div>
                             </div>
 
@@ -135,7 +207,7 @@ export default function StudyPage({ sessions, onCompleteSession }) {
                                                 {mins}:{secs}
                                             </div>
                                             <div className="mt-2 text-xs text-white/45">
-                                                {mode === "focus" ? "Focus Mode" : "Break Mode"} 
+                                                {mode === "focus" ? "Focus Mode" : "Break Mode"}
                                             </div>
                                         </div>
                                     </div>
@@ -144,8 +216,24 @@ export default function StudyPage({ sessions, onCompleteSession }) {
 
                             <div className="mt-8 flex items-center justify-center gap-4">
                                 <button
-                                    onClick={() => setIsRunning((v) => !v)}
-                                    className="flex min-w-[100px] items-center justify-center gap-2 rounded-xl bg-[#a5a8d3] px-4 py-2 text-sm font-medium text-[#252760] transition hover:brightness-105"
+                                    disabled={!userId}
+                                    onClick={() => {
+                                        if (!userIdRef.current && !userId) {
+                                            toast.error("Still loading user...");
+                                            return;
+                                        }
+
+                                        if (!isRunning && mode === "focus") {
+                                            hasSavedRef.current = false;
+                                        }
+
+                                        setIsRunning((v) => !v);
+                                    }}
+                                    className={`flex min-w-[100px] items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition ${
+                                        !userId
+                                            ? "bg-gray-400 cursor-not-allowed text-white/70"
+                                            : "bg-[#a5a8d3] text-[#252760] hover:brightness-105"
+                                    }`}
                                 >
                                     <Play className="h-4 w-4" />
                                     {isRunning ? "Pause" : "Start"}
@@ -154,7 +242,8 @@ export default function StudyPage({ sessions, onCompleteSession }) {
                                 <button
                                     onClick={() => {
                                         setIsRunning(false);
-                                        setSecondsLeft(modeRef.current === "focus" ? focusMinutes * 60 : breakMinutes * 60);
+                                        hasSavedRef.current = false;
+                                        setSecondsLeft(modeRef.current === "focus" ? focusValue * 60 : breakValue * 60);
                                     }}
                                     className="flex min-w-[100px] items-center justify-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm text-white transition hover:bg-white/15"
                                 >
@@ -168,7 +257,7 @@ export default function StudyPage({ sessions, onCompleteSession }) {
                             <GlassCard className="p-6 bg-[#2c2f73]">
                                 <div className="text-xl font-medium">Today's Sessions</div>
                                 <div className="mt-6 text-center text-5xl font-light">
-                                    {sessions}
+                                    {todaySessions}
                                 </div>
                                 <div className="mt-2 text-center text-sm text-white/50">
                                     Completed focus sessions
@@ -209,19 +298,20 @@ export default function StudyPage({ sessions, onCompleteSession }) {
                                 ✕
                             </button>
                         </div>
- 
+
                         <div className="flex flex-col gap-2">
                             <label className="text-sm text-white/60">Focus (minutes)</label>
                             <input
                                 type="number"
                                 min="1"
+                                step="1"
                                 max="60"
                                 value={focusMinutes}
-                                onChange={(e) => setFocusMinutes(parseInt(e.target.value) || 25)}
+                                onChange={(e) => setFocusMinutes(e.target.value)}
                                 className="bg-white/10 text-white rounded-lg px-3 py-2 outline-none"
                             />
                         </div>
- 
+
                         <div className="flex flex-col gap-2">
                             <label className="text-sm text-white/60">Break (minutes)</label>
                             <input
@@ -229,11 +319,11 @@ export default function StudyPage({ sessions, onCompleteSession }) {
                                 min="1"
                                 max="30"
                                 value={breakMinutes}
-                                onChange={(e) => setBreakMinutes(parseInt(e.target.value) || 5)}
+                                onChange={(e) => setBreakMinutes(e.target.value)}
                                 className="bg-white/10 text-white rounded-lg px-3 py-2 outline-none"
                             />
                         </div>
- 
+
                         <button
                             onClick={saveSettings}
                             className="bg-[#a5a8d3] text-[#252760] font-medium rounded-xl py-2 hover:brightness-105"
