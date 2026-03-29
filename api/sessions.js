@@ -1,6 +1,6 @@
-const { getPool } = require("./db");
+import { getPool } from "./db.js";
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -14,36 +14,33 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const { device_id } = req.body;
+        const { user_id, duration_minutes, session_date } = req.body || {};
 
-        if (!device_id) {
-            return res.status(400).json({ error: "device_id is required" });
+        if (!user_id || !duration_minutes) {
+            return res.status(400).json({ error: "user_id and duration_minutes are required" });
         }
 
         const pool = getPool();
 
-        const [existing] = await pool.query(
-            "SELECT * FROM users WHERE device_id = ? LIMIT 1",
-            [device_id]
-        );
-
-        if (existing.length > 0) {
-            return res.status(200).json(existing[0]);
-        }
-
         const [result] = await pool.query(
-            "INSERT INTO users (device_id) VALUES (?)",
-            [device_id]
+            `INSERT INTO study_sessions (user_id, duration_minutes, session_date)
+       VALUES (?, ?, ?)`,
+            [
+                user_id,
+                duration_minutes,
+                session_date || new Date().toISOString().slice(0, 10),
+            ]
         );
 
-        const [newUser] = await pool.query(
-            "SELECT * FROM users WHERE user_id = ? LIMIT 1",
-            [result.insertId]
-        );
-
-        return res.status(200).json(newUser[0]);
+        return res.status(200).json({
+            message: "Session created",
+            session_id: result.insertId,
+        });
     } catch (error) {
-        console.error("Users API error:", error);
-        return res.status(500).json({ error: "Failed to get or create user" });
+        console.error("Sessions API error:", error);
+        return res.status(500).json({
+            error: "Failed to create session",
+            detail: error.message,
+        });
     }
-};
+}

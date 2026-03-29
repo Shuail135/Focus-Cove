@@ -2,7 +2,7 @@ import mysql from "mysql2/promise";
 
 let pool;
 
-function getPool() {
+export function getPool() {
     if (!pool) {
         const useStrictSSL = !!process.env.DB_SSL_CA;
 
@@ -28,5 +28,3 @@ function getPool() {
 
     return pool;
 }
-
-module.exports = { getPool };

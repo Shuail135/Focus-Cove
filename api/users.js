@@ -1,6 +1,6 @@
 import { getPool } from "./db.js";
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -14,7 +14,7 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const { device_id } = req.body;
+        const { device_id } = req.body || {};
 
         if (!device_id) {
             return res.status(400).json({ error: "device_id is required" });
@@ -44,6 +44,9 @@ module.exports = async (req, res) => {
         return res.status(200).json(newUser[0]);
     } catch (error) {
         console.error("Users API error:", error);
-        return res.status(500).json({ error: "Failed to get or create user" });
+        return res.status(500).json({
+            error: "Failed to get or create user",
+            detail: error.message,
+        });
     }
-};
+}

@@ -1,6 +1,6 @@
-const { getPool } = require("../../db");
+import { getPool } from "../../db.js";
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -29,6 +29,9 @@ module.exports = async (req, res) => {
         return res.status(200).json(rows[0]);
     } catch (error) {
         console.error("Today sessions API error:", error);
-        return res.status(500).json({ error: "Failed to fetch today's sessions" });
+        return res.status(500).json({
+            error: "Failed to fetch today's sessions",
+            detail: error.message,
+        });
     }
-};
+}
